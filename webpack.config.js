@@ -9,6 +9,7 @@ module.exports = {
   mode,
   entry: {
     popup: "./src/popup/index",
+    options: "./src/options/index",
   },
   output: {
     path: path.resolve(__dirname, "dist/"),
