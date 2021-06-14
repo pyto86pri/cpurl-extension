@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import ReactLoading from "react-loading";
 import Mousetrap from "mousetrap";
 import {
   LinkStyle,
@@ -10,6 +11,29 @@ import {
 } from "../common";
 
 export const Popup: React.VFC = () => {
+  const tabInfo = useTabInfo();
+  const { shortcutKeys } = useShortcutKeys();
+
+  if (!tabInfo || !shortcutKeys) {
+    return (
+      <ReactLoading
+        type="spin"
+        color="#008080"
+        height="10%"
+        width="10%"
+        className="loading"
+      />
+    );
+  }
+  return <Content tabInfo={tabInfo} shortcutKeys={shortcutKeys} />;
+};
+
+type TabInfo = Readonly<{
+  title: string;
+  url: string;
+}>;
+
+function useTabInfo(): TabInfo | undefined {
   const [tabInfo, setTabInfo] = useState<TabInfo | undefined>(undefined);
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
@@ -22,18 +46,8 @@ export const Popup: React.VFC = () => {
     });
   }, []);
 
-  const { shortcutKeys } = useShortcutKeys();
-
-  if (!tabInfo || !shortcutKeys) {
-    return <></>;
-  }
-  return <Content tabInfo={tabInfo} shortcutKeys={shortcutKeys} />;
-};
-
-type TabInfo = Readonly<{
-  title: string;
-  url: string;
-}>;
+  return tabInfo;
+}
 
 type ContentProps = Readonly<{ tabInfo: TabInfo; shortcutKeys: ShortcutKeys }>;
 
