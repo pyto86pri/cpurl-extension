@@ -63,48 +63,36 @@ export function useShortcutKeys(): UseShortcutKeys {
     useState<Readonly<{ [S in LinkStyle]: string } | undefined>>(undefined);
 
   useEffect(() => {
-    Promise.all<[style: LinkStyle, shortcutKey: string]>(
-      linkStyles.map(async (style) => {
-        const shortcut = await getShortcutKeyFromStorage(style);
-        return [style, shortcut];
-      })
-    ).then((res) =>
-      setShortcutKeys(
-        Object.fromEntries(res) as Readonly<{ [S in LinkStyle]: string }>
-      )
-    );
-  }, []);
+    const refresh = () => {
+      Promise.all<[style: LinkStyle, shortcutKey: string]>(
+        linkStyles.map(async (style) => {
+          const shortcut = await getShortcutKeyFromStorage(style);
+          return [style, shortcut];
+        })
+      ).then((res) =>
+        setShortcutKeys(
+          Object.fromEntries(res) as Readonly<{ [S in LinkStyle]: string }>
+        )
+      );
+    };
 
-  useEffect(() => {
+    refresh();
     const handler = (
       changes: { [key: string]: chrome.storage.StorageChange },
       areaName: "sync" | "local" | "managed"
     ) => {
-      if (areaName !== "sync") return;
-
-      let changedShortCutKeys: Partial<ShortcutKeys> = {};
-      for (const style of linkStyles) {
-        const key = storageKey(style);
-        if (key in changes) {
-          const newValue = changes[key].newValue;
-          if (typeof newValue !== "string") return;
-
-          changedShortCutKeys = { ...changedShortCutKeys, [style]: newValue };
-        }
+      if (
+        areaName === "sync" &&
+        linkStyles.map(storageKey).some((key) => key in changes)
+      ) {
+        refresh();
       }
-      setShortcutKeys(
-        (shortcutKeys) =>
-          shortcutKeys && {
-            ...shortcutKeys,
-            ...changedShortCutKeys,
-          }
-      );
     };
     chrome.storage.onChanged.addListener(handler);
     return () => {
       chrome.storage.onChanged.removeListener(handler);
     };
-  });
+  }, []);
 
   return { shortcutKeys, setShortcutKeys };
 }
