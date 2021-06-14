@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Mousetrap from "mousetrap";
+import {
+  LinkStyle,
+  ShortcutKeys,
+  linkStyles,
+  useShortcutKeys,
+  labelByLinkStyle,
+  toLinkText,
+} from "../common";
 
 export const Popup: React.VFC = () => {
   const [tabInfo, setTabInfo] = useState<TabInfo | undefined>(undefined);
@@ -14,20 +22,33 @@ export const Popup: React.VFC = () => {
     });
   }, []);
 
+  const { shortcutKeys } = useShortcutKeys();
+
+  if (!tabInfo || !shortcutKeys) {
+    return <></>;
+  }
+  return <Content tabInfo={tabInfo} shortcutKeys={shortcutKeys} />;
+};
+
+type TabInfo = Readonly<{
+  title: string;
+  url: string;
+}>;
+
+type ContentProps = Readonly<{ tabInfo: TabInfo; shortcutKeys: ShortcutKeys }>;
+
+const Content: React.VFC<ContentProps> = ({ tabInfo, shortcutKeys }) => {
   const [style, setStyle] = useState<LinkStyle | undefined>(undefined);
+
   const copyLinkText = useCallback(
     (style: LinkStyle) => {
-      if (!tabInfo) return;
-
-      const text = toLinkText(style, tabInfo);
+      const text = toLinkText(style, tabInfo.title, tabInfo.url);
       copyText(text);
       setStyle(style);
     },
     [tabInfo]
   );
-  useShortcut("c m", () => copyLinkText("markdown"));
-  useShortcut("c s", () => copyLinkText("scrapbox"));
-  useShortcut("c h", () => copyLinkText("hatena"));
+  useRegisterShortcuts(shortcutKeys, copyLinkText);
 
   const lastStyle = useRef<LinkStyle | undefined>(undefined);
   const timerIdRef = useRef<number | undefined>(undefined);
@@ -47,62 +68,54 @@ export const Popup: React.VFC = () => {
     <>
       {style === undefined ? (
         <div>
-          Commands:
+          Shortcuts:
           <ul>
-            <li>
-              <kbd>c</kbd>+<kbd>m</kbd>: Copy URL as <strong>Markdown</strong>
-            </li>
-            <li>
-              <kbd>c</kbd>+<kbd>s</kbd>: Copy URL as <strong>Scrapbox</strong>
-            </li>
-            <li>
-              <kbd>c</kbd>+<kbd>h</kbd>: Copy URL as <strong>Hatena</strong>
-            </li>
+            {linkStyles.map((s) => (
+              <li key={s}>
+                {shortcutKeys[s].split(" ").map((key, i) => {
+                  if (i === 0) {
+                    return (
+                      <React.Fragment key={i}>
+                        <kbd>{key}</kbd>
+                      </React.Fragment>
+                    );
+                  }
+                  return (
+                    <React.Fragment key={i}>
+                      +<kbd>{key}</kbd>
+                    </React.Fragment>
+                  );
+                })}
+                : Copy URL as <strong>{labelByLinkStyle[s]}</strong>
+              </li>
+            ))}
           </ul>
         </div>
       ) : (
         <div>
-          Copied as <strong>{style.toUpperCase()}</strong>
+          Copied as <strong>{labelByLinkStyle[style]}</strong>
         </div>
       )}
     </>
   );
 };
 
-type TabInfo = Readonly<{
-  title: string;
-  url: string;
-}>;
-
 function copyText(text: string): void {
   navigator.clipboard.writeText(text).catch(() => {});
 }
 
-type LinkStyle = "markdown" | "scrapbox" | "hatena";
-
-function toLinkText(style: LinkStyle, tabInfo: TabInfo): string {
-  switch (style) {
-    case "markdown":
-      return `[${escape(tabInfo.title)}](${escape(tabInfo.url)})`;
-    case "scrapbox":
-      return `[${escape(tabInfo.title)} ${escape(tabInfo.url)}]`;
-    case "hatena":
-      return `[${escape(tabInfo.url)}:title=${escape(tabInfo.title)}]`;
-  }
-}
-
-function escape(s: string): string {
-  return s.replace(
-    /[!*'()] /g,
-    (char) => `%${char.charCodeAt(0).toString(16)}`
-  );
-}
-
-function useShortcut(keys: string, handler: () => void): void {
+function useRegisterShortcuts(
+  shortcutKeys: ShortcutKeys,
+  handler: (style: LinkStyle) => void
+): void {
   useEffect(() => {
-    Mousetrap.bind(keys, handler);
+    for (const style of linkStyles) {
+      Mousetrap.bind(shortcutKeys[style], () => handler(style));
+    }
     return () => {
-      Mousetrap.unbind(keys);
+      for (const style of linkStyles) {
+        Mousetrap.unbind(shortcutKeys[style]);
+      }
     };
-  }, [keys, handler]);
+  }, [shortcutKeys, handler]);
 }
