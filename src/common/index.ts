@@ -53,12 +53,12 @@ export async function setShortcutKeyToStorage(
 
 export type ShortcutKeys = Readonly<{ [S in LinkStyle]: string }>;
 
-type UseShortcuts = Readonly<{
+type UseShortcutKeys = Readonly<{
   shortcutKeys: Readonly<ShortcutKeys | undefined>;
   setShortcutKeys: (shortcuts: Readonly<ShortcutKeys>) => void;
 }>;
 
-export function useShortcutKeys(): UseShortcuts {
+export function useShortcutKeys(): UseShortcutKeys {
   const [shortcutKeys, setShortcutKeys] =
     useState<Readonly<{ [S in LinkStyle]: string } | undefined>>(undefined);
 
