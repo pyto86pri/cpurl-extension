@@ -75,6 +75,37 @@ export function useShortcutKeys(): UseShortcuts {
     );
   }, []);
 
+  useEffect(() => {
+    const handler = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: "sync" | "local" | "managed"
+    ) => {
+      if (areaName !== "sync") return;
+
+      let changedShortCutKeys: Partial<ShortcutKeys> = {};
+      for (const style of linkStyles) {
+        const key = storageKey(style);
+        if (key in changes) {
+          const newValue = changes[key].newValue;
+          if (typeof newValue !== "string") return;
+
+          changedShortCutKeys = { ...changedShortCutKeys, [style]: newValue };
+        }
+      }
+      setShortcutKeys(
+        (shortcutKeys) =>
+          shortcutKeys && {
+            ...shortcutKeys,
+            ...changedShortCutKeys,
+          }
+      );
+    };
+    chrome.storage.onChanged.addListener(handler);
+    return () => {
+      chrome.storage.onChanged.removeListener(handler);
+    };
+  });
+
   return { shortcutKeys, setShortcutKeys };
 }
 
