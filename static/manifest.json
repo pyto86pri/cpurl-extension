@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "cpurl",
+  "name": "CpURL",
   "version": "0.0.0",
   "action": {
     "default_icon": {
