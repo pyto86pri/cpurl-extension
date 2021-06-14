@@ -14,38 +14,38 @@ export const Popup: React.VFC = () => {
     });
   }, []);
 
-  const [linkType, setLinkType] = useState<LinkType | undefined>(undefined);
+  const [style, setStyle] = useState<LinkStyle | undefined>(undefined);
   const copyLinkText = useCallback(
-    (type: LinkType) => {
+    (style: LinkStyle) => {
       if (!tabInfo) return;
 
-      const text = toLinkText(type, tabInfo);
+      const text = toLinkText(style, tabInfo);
       copyText(text);
-      setLinkType(type);
+      setStyle(style);
     },
     [tabInfo]
   );
-  useCommand("c m", () => copyLinkText("markdown"));
-  useCommand("c s", () => copyLinkText("scrapbox"));
-  useCommand("c h", () => copyLinkText("hatena"));
+  useShortcut("c m", () => copyLinkText("markdown"));
+  useShortcut("c s", () => copyLinkText("scrapbox"));
+  useShortcut("c h", () => copyLinkText("hatena"));
 
-  const lastLinkType = useRef<LinkType | undefined>(undefined);
-  const timeoutIdRef = useRef<number | undefined>(undefined);
+  const lastStyle = useRef<LinkStyle | undefined>(undefined);
+  const timerIdRef = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (linkType !== undefined && linkType !== lastLinkType.current) {
-      if (timeoutIdRef.current !== undefined) {
-        window.clearTimeout(timeoutIdRef.current);
+    if (style !== undefined && style !== lastStyle.current) {
+      if (timerIdRef.current !== undefined) {
+        window.clearTimeout(timerIdRef.current);
       }
-      timeoutIdRef.current = window.setTimeout(() => {
-        setLinkType(undefined);
+      timerIdRef.current = window.setTimeout(() => {
+        setStyle(undefined);
       }, 3000);
     }
-    lastLinkType.current = linkType;
-  }, [linkType]);
+    lastStyle.current = style;
+  }, [style]);
 
   return (
     <>
-      {linkType === undefined ? (
+      {style === undefined ? (
         <div>
           Commands:
           <ul>
@@ -62,7 +62,7 @@ export const Popup: React.VFC = () => {
         </div>
       ) : (
         <div>
-          Copied as <strong>{linkType.toUpperCase()}</strong>
+          Copied as <strong>{style.toUpperCase()}</strong>
         </div>
       )}
     </>
@@ -78,10 +78,10 @@ function copyText(text: string): void {
   navigator.clipboard.writeText(text).catch(() => {});
 }
 
-type LinkType = "markdown" | "scrapbox" | "hatena";
+type LinkStyle = "markdown" | "scrapbox" | "hatena";
 
-function toLinkText(type: LinkType, tabInfo: TabInfo): string {
-  switch (type) {
+function toLinkText(style: LinkStyle, tabInfo: TabInfo): string {
+  switch (style) {
     case "markdown":
       return `[${escape(tabInfo.title)}](${escape(tabInfo.url)})`;
     case "scrapbox":
@@ -98,7 +98,7 @@ function escape(s: string): string {
   );
 }
 
-function useCommand(keys: string, handler: () => void): void {
+function useShortcut(keys: string, handler: () => void): void {
   useEffect(() => {
     Mousetrap.bind(keys, handler);
     return () => {
