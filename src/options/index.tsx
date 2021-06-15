@@ -1,5 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import { Container } from "@material-ui/core";
 import { Options } from "./Options";
 
-ReactDOM.render(<Options />, document.getElementById("root"));
+ReactDOM.render(
+  <Container>
+    <Options />
+  </Container>,
+  document.getElementById("root")
+);

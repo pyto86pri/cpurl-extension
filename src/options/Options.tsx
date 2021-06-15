@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { TextField, Button } from "@material-ui/core";
 import {
   LinkStyle,
   ShortcutKeys,
@@ -44,25 +45,47 @@ const Form: React.VFC<FormProps> = ({ shortcutKeys, setShortcutKeys }) => {
     };
 
   return (
-    <form onSubmit={onSubmit}>
-      {linkStyles.map((style) => (
+    <>
+      <h3>Shortcut key settings</h3>
+      <div className="description">
+        <div>* Supported keys:</div>
         <div>
-          <label>
-            {labelByLinkStyle[style]}{" "}
-            <input
-              id={style}
-              type="text"
-              value={shortcutKeys[style]}
-              disabled={isSubmitting}
-              required
-              onChange={onChange(style)}
-            />
-          </label>
+          <p>
+            For modifier keys you can use <kbd>shift</kbd>, <kbd>ctrl</kbd>,{" "}
+            <kbd>alt</kbd>, or <kbd>meta</kbd>. Any other key you should be able
+            to reference by name like <kbd>a</kbd>, <kbd>/</kbd>, <kbd>$</kbd>,{" "}
+            <kbd>*</kbd>, or <kbd>=</kbd>.
+          </p>
         </div>
-      ))}
-      <button type="submit" disabled={isSubmitting}>
-        Submit
-      </button>
-    </form>
+      </div>
+      <form onSubmit={onSubmit}>
+        {linkStyles.map((style) => (
+          <TextField
+            key={style}
+            id={style}
+            label={labelByLinkStyle[style]}
+            disabled={isSubmitting}
+            required
+            inputProps={{
+              pattern:
+                "^([a-z0-9!-/:-@¥[-`{-~]|shift|ctrl|alt|meta)([ +]([a-z0-9!-/:-@¥[-`{-~]|shift|ctrl|alt|meta))*$",
+            }}
+            value={shortcutKeys[style]}
+            onChange={onChange(style)}
+            fullWidth
+          />
+        ))}
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="submit-button"
+          variant="outlined"
+          size="small"
+          color="primary"
+        >
+          Submit
+        </Button>
+      </form>
+    </>
   );
 };
