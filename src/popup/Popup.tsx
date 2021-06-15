@@ -92,20 +92,23 @@ const Content: React.VFC<ContentProps> = ({ source, shortcutKeys }) => {
           <ul>
             {linkStyles.map((s) => (
               <li key={s}>
-                {shortcutKeys[s].split(" ").map((key, i) => {
-                  if (i === 0) {
+                {shortcutKeys[s]
+                  .split(/[ +]/)
+                  .filter(Boolean)
+                  .map((key, i) => {
+                    if (i === 0) {
+                      return (
+                        <React.Fragment key={i}>
+                          <kbd>{key}</kbd>
+                        </React.Fragment>
+                      );
+                    }
                     return (
                       <React.Fragment key={i}>
-                        <kbd>{key}</kbd>
+                        +<kbd>{key}</kbd>
                       </React.Fragment>
                     );
-                  }
-                  return (
-                    <React.Fragment key={i}>
-                      +<kbd>{key}</kbd>
-                    </React.Fragment>
-                  );
-                })}
+                  })}
                 : Copy URL as <strong>{labelByLinkStyle[s]}</strong>
               </li>
             ))}
