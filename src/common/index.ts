@@ -11,40 +11,36 @@ export const labelByLinkStyle: Readonly<{ [S in LinkStyle]: string }> = {
   hatena: "Hatena",
 };
 
-export function toLinkText(
-  style: LinkStyle,
-  title: string,
-  url: string
-): string {
+export type LinkSource = Readonly<{ title: string; url: string }>;
+
+export function toLink(style: LinkStyle, source: LinkSource): string {
   switch (style) {
     case "markdown":
-      return `[${escape(title)}](${escape(url)})`;
+      return `[${escape(source.title)}](${escape(source.url)})`;
     case "scrapbox":
-      return `[${escape(title)} ${escape(url)}]`;
+      return `[${escape(source.title)} ${escape(source.url)}]`;
     case "hatena":
-      return `[${escape(url)}:title=${escape(title)}]`;
+      return `[${escape(source.url)}:title=${escape(source.title)}]`;
   }
 }
 
-const defaultShortcutKeysByLinkStyle: Readonly<{ [S in LinkStyle]: string }> = {
+const defaultShortcutKeyByLinkStyle: Readonly<{ [S in LinkStyle]: string }> = {
   markdown: "c m",
   scrapbox: "c s",
   hatena: "c h",
 };
 
-const storageKey = (style: LinkStyle) => `shortcut:${style}`;
+const storageKey = (style: LinkStyle) => `shortcutKey:${style}`;
 
-export async function getShortcutKeyFromStorage(
-  style: LinkStyle
-): Promise<string> {
+async function getShortcutKeyFromStorage(style: LinkStyle): Promise<string> {
   const shortcutKey = await syncGet(storageKey(style));
   if (typeof shortcutKey === "string") {
     return shortcutKey;
   }
-  return defaultShortcutKeysByLinkStyle[style];
+  return defaultShortcutKeyByLinkStyle[style];
 }
 
-export async function setShortcutKeyToStorage(
+async function setShortcutKeyToStorage(
   style: LinkStyle,
   shortcutKey: string
 ): Promise<void> {
@@ -69,9 +65,9 @@ export function useShortcutKeys(): UseShortcutKeys {
           const shortcut = await getShortcutKeyFromStorage(style);
           return [style, shortcut];
         })
-      ).then((res) =>
+      ).then((entries) =>
         setShortcutKeys(
-          Object.fromEntries(res) as Readonly<{ [S in LinkStyle]: string }>
+          Object.fromEntries(entries) as Readonly<{ [S in LinkStyle]: string }>
         )
       );
     };

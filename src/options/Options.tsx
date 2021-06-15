@@ -23,15 +23,19 @@ type FormProps = Readonly<{
 }>;
 
 const Form: React.VFC<FormProps> = ({ shortcutKeys, setShortcutKeys }) => {
-  const update = useUpdateShortcutKeys();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const onSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+  const update = useUpdateShortcutKeys();
+  const onSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    update(shortcutKeys)
-      .catch(() => {})
-      .then(() => window.close())
-      .finally(() => setIsSubmitting(false));
+    try {
+      update(shortcutKeys);
+      window.close();
+    } catch {
+      // noop
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   const onChange =
     (style: LinkStyle): React.ChangeEventHandler<HTMLInputElement> =>

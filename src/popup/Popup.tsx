@@ -7,14 +7,15 @@ import {
   linkStyles,
   useShortcutKeys,
   labelByLinkStyle,
-  toLinkText,
+  toLink,
+  LinkSource,
 } from "../common";
 
 export const Popup: React.VFC = () => {
-  const tabInfo = useTabInfo();
+  const source = useLinkSource();
   const { shortcutKeys } = useShortcutKeys();
 
-  if (!tabInfo || !shortcutKeys) {
+  if (!source || !shortcutKeys) {
     return (
       <ReactLoading
         type="spin"
@@ -25,62 +26,67 @@ export const Popup: React.VFC = () => {
       />
     );
   }
-  return <Content tabInfo={tabInfo} shortcutKeys={shortcutKeys} />;
+  return <Content source={source} shortcutKeys={shortcutKeys} />;
 };
 
-type TabInfo = Readonly<{
-  title: string;
-  url: string;
-}>;
-
-function useTabInfo(): TabInfo | undefined {
-  const [tabInfo, setTabInfo] = useState<TabInfo | undefined>(undefined);
+function useLinkSource(): LinkSource | undefined {
+  const [source, setSource] = useState<LinkSource | undefined>(undefined);
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       if (tabs.length === 0) return;
 
       const tab = tabs[0];
       if (tab.title && tab.url) {
-        setTabInfo({ title: tab.title, url: tab.url });
+        setSource({ title: tab.title, url: tab.url });
       }
     });
   }, []);
 
-  return tabInfo;
+  return source;
 }
 
-type ContentProps = Readonly<{ tabInfo: TabInfo; shortcutKeys: ShortcutKeys }>;
+type ContentProps = Readonly<{
+  source: LinkSource;
+  shortcutKeys: ShortcutKeys;
+}>;
 
-const Content: React.VFC<ContentProps> = ({ tabInfo, shortcutKeys }) => {
-  const [style, setStyle] = useState<LinkStyle | undefined>(undefined);
+type CopyState =
+  | Readonly<{ type: "default" }>
+  | Readonly<{ type: "copied"; style: LinkStyle }>;
 
-  const copyLinkText = useCallback(
+const Content: React.VFC<ContentProps> = ({ source, shortcutKeys }) => {
+  const [state, setState] = useState<CopyState>({ type: "default" });
+
+  const copyLink = useCallback(
     (style: LinkStyle) => {
-      const text = toLinkText(style, tabInfo.title, tabInfo.url);
-      copyText(text);
-      setStyle(style);
+      copyText(toLink(style, source));
+      setState({ type: "copied", style });
     },
-    [tabInfo]
+    [source]
   );
-  useRegisterShortcuts(shortcutKeys, copyLinkText);
+  useRegisterShortcuts(shortcutKeys, copyLink);
 
-  const lastStyle = useRef<LinkStyle | undefined>(undefined);
+  const lastState = useRef<CopyState>(state);
   const timerIdRef = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (style !== undefined && style !== lastStyle.current) {
+    if (
+      state.type !== "default" &&
+      (lastState.current.type === "default" ||
+        state.style !== lastState.current.style)
+    ) {
       if (timerIdRef.current !== undefined) {
         window.clearTimeout(timerIdRef.current);
       }
       timerIdRef.current = window.setTimeout(() => {
-        setStyle(undefined);
+        setState({ type: "default" });
       }, 3000);
     }
-    lastStyle.current = style;
-  }, [style]);
+    lastState.current = state;
+  }, [state]);
 
   return (
     <>
-      {style === undefined ? (
+      {state.type === "default" ? (
         <div>
           Shortcuts:
           <ul>
@@ -107,7 +113,7 @@ const Content: React.VFC<ContentProps> = ({ tabInfo, shortcutKeys }) => {
         </div>
       ) : (
         <div>
-          Copied as <strong>{labelByLinkStyle[style]}</strong>
+          Copied as <strong>{labelByLinkStyle[state.style]}</strong>
         </div>
       )}
     </>
