@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { escape } from "../lib";
+import { escapeForHtml, escapeForUrl } from "../lib";
 import { syncGet, syncSet } from "./storage";
 
 export const linkStyles = ["markdown", "scrapbox", "hatena"] as const;
@@ -16,11 +16,17 @@ export type LinkSource = Readonly<{ title: string; url: string }>;
 export function toLink(style: LinkStyle, source: LinkSource): string {
   switch (style) {
     case "markdown":
-      return `[${escape(source.title)}](${escape(source.url)})`;
+      return `[${escapeForHtml(source.title)}](${escapeForUrl(source.url)})`;
     case "scrapbox":
-      return `[${escape(source.title)} ${escape(source.url)}]`;
+      // In Scrapbox, `[` and `]` cannot be escaped.
+      // So replace them with `|` for an alternative.
+      return `[${source.title.replace(/[\[\]]/g, "|")} ${escapeForUrl(
+        source.url
+      )}]`;
     case "hatena":
-      return `[${escape(source.url)}:title=${escape(source.title)}]`;
+      return `[${escapeForUrl(source.url)}:title=${escapeForHtml(
+        source.title
+      )}]`;
   }
 }
 
